@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy — Playlist Converter</title>
+    <style>
+      body {
+        font:
+          16px/1.7 system-ui,
+          sans-serif;
+        color: #20231c;
+        background: #f5f4ee;
+        margin: 0;
+      }
+      main {
+        max-width: 720px;
+        margin: 48px auto;
+        padding: 0 24px;
+      }
+      h1 {
+        font-size: 38px;
+        line-height: 1.2;
+      }
+      h2 {
+        font-size: 21px;
+        margin-top: 32px;
+      }
+      a {
+        color: inherit;
+        text-underline-offset: 4px;
+      }
+      small {
+        color: #606452;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a href="/">← Back to Playlist Converter</a>
+      <h1>Your music, your data.</h1>
+      <small>Privacy information · Updated November 7, 2026</small>
+      <p>
+        Playlist Converter is an experimental playlist converter and learning
+        project. Real connections are limited by Spotify and Google application
+        access. The local simulated mode uses fictional accounts and playlists.
+        This page describes the service at playlist-converter.jfs-cloud.com,
+        operated by Jordão Frazão.
+      </p>
+      <h2>What the application stores</h2>
+      <p>
+        When you connect a service, the application stores its account or
+        channel identifier, display name, and OAuth access and refresh tokens.
+        Tokens are encrypted on the server using a deployment-managed key. The
+        application does not ask for your Spotify or Google password.
+      </p>
+      <p>
+        Conversions store playlist metadata, song identifiers, candidate
+        matches, your review choices, progress, and the destination playlist
+        link. It uses Spotify and YouTube APIs to read your owned source
+        playlist, search for matches, and create a new private destination. It
+        does not download or upload audio.
+      </p>
+      <h2>Your browser session</h2>
+      <p>
+        An HTTP-only session cookie identifies your saved connections and
+        conversions. A conversion identifier is also stored in browser local
+        storage to restore the selected job. There is no separate Playlist
+        Converter login or cross-device recovery. Clearing cookies or letting
+        the session expire removes your ability to access that session's saved
+        work.
+      </p>
+      <h2>Retention and deletion</h2>
+      <p>
+        Sessions expire after seven days of inactivity. Conversion records are
+        scheduled for cleanup after seven days. Expired session owners and their
+        credentials are removed by periodic server cleanup. Stored provider data
+        and backups may remain until cleanup or backup expiration completes.
+      </p>
+      <p>
+        Use “Clear my data” in the converter to cancel work and remove your
+        local session records and stored credentials. Disconnecting a provider
+        cancels active work and removes its stored connection. You can also
+        revoke access in your Spotify or Google account settings. These actions
+        do not delete destination playlists already created in your music
+        accounts.
+      </p>
+      <h2>Service providers and hosting</h2>
+      <p>
+        Spotify and Google receive the authorized API requests needed for
+        conversion and process them under their own policies. The service runs
+        on a server operated by the maintainer.
+      </p>
+      <h2>Logs and traffic statistics</h2>
+      <p>
+        There are no advertisements, analytics scripts, or tracking cookies. The
+        web server records each request: time, page path without its query
+        string, response status, browser user agent, and your IP address
+        shortened to its network prefix (/24 for IPv4, /48 for IPv6). Cookies,
+        referrers, and authorization headers are not recorded. These records are
+        kept for up to 14 days and are used for security and aggregate traffic
+        statistics visible only to the operator.
+      </p>
+      <p>
+        The application logs conversion progress as status codes and counts. It
+        does not log playlist names, songs, links, or account identities.
+      </p>
+      <h2>Backups</h2>
+      <p>
+        The database is backed up daily on the same server and each copy is
+        deleted after seven days. Data removed from the service can therefore
+        remain in a backup for up to seven more days.
+      </p>
+      <h2>Contact</h2>
+      <p>
+        Questions and requests go through the project's
+        <a href="https://github.com/jordaofs/playlist-converter/issues"
+          >GitHub issues</a
+        >. Issues are public, so do not include personal data, account details,
+        or tokens. You do not need to contact anyone to delete your data: use
+        “Clear my data” or revoke access in your Spotify or Google account.
+        Report security vulnerabilities privately through
+        <a
+          href="https://github.com/jordaofs/playlist-converter/security/advisories/new"
+          >GitHub security advisories</a
+        >.
+      </p>
+      <h2>Matching limitations</h2>
+      <p>
+        Not every recording exists on both services. Ambiguous matches require
+        your review. Matching accuracy has not been independently measured;
+        completed conversion does not guarantee recording identity.
+      </p>
+      <p>
+        <a href="/">Return to the converter</a> to manage your connections and
+        data.
+      </p>
+    </main>
+  </body>
+</html>

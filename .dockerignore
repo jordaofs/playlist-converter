@@ -1,0 +1,10 @@
+.env*
+.git
+.claude
+web/node_modules
+web/dist
+web/coverage
+web/test-results
+data
+coverage.out
+.release-denylist

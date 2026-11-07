@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "split": "holdout",
+  "provenance": "Synthetic behavior fixtures authored for automated tests; not independently verified real music labels. No accuracy claim is supported.",
+  "independentLabels": false,
+  "cases": [
+    {
+      "id": "holdout-spotify-youtube-exact",
+      "direction": "spotify-youtube",
+      "family": "fixture-holdout-exact",
+      "source": {
+        "id": "holdout-spotify-youtube-exact-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist holdout"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [
+        {
+          "id": "holdout-spotify-youtube-exact-target",
+          "title": "Northern Lights",
+          "artists": [
+            "Fixture Artist holdout"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        }
+      ],
+      "acceptableIds": [
+        "holdout-spotify-youtube-exact-target"
+      ],
+      "noMatch": false
+    },
+    {
+      "id": "holdout-spotify-youtube-live",
+      "direction": "spotify-youtube",
+      "family": "fixture-holdout-live",
+      "source": {
+        "id": "holdout-spotify-youtube-live-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist holdout"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [
+        {
+          "id": "holdout-spotify-youtube-live-target",
+          "title": "Northern Lights (Live)",
+          "artists": [
+            "Fixture Artist holdout"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        }
+      ],
+      "acceptableIds": [
+        "holdout-spotify-youtube-live-absent-correct"
+      ],
+      "noMatch": false
+    },
+    {
+      "id": "holdout-spotify-youtube-missing",
+      "direction": "spotify-youtube",
+      "family": "fixture-holdout-missing",
+      "source": {
+        "id": "holdout-spotify-youtube-missing-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist holdout"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [],
+      "acceptableIds": [],
+      "noMatch": true
+    },
+    {
+      "id": "holdout-spotify-youtube-tie",
+      "direction": "spotify-youtube",
+      "family": "fixture-holdout-tie",
+      "source": {
+        "id": "holdout-spotify-youtube-tie-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist holdout"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [
+        {
+          "id": "holdout-spotify-youtube-tie-target",
+          "title": "Northern Lights",
+          "artists": [
+            "Fixture Artist holdout"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        },
+        {
+          "id": "holdout-spotify-youtube-tie-alternate",
+          "title": "Northern Lights",
+          "artists": [
+            "Fixture Artist holdout"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        }
+      ],
+      "acceptableIds": [
+        "holdout-spotify-youtube-tie-target"
+      ],
+      "noMatch": false
+    },
+    {
+      "id": "holdout-youtube-spotify-exact",
+      "direction": "youtube-spotify",
+      "family": "fixture-holdout-exact",
+      "source": {
+        "id": "holdout-youtube-spotify-exact-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist holdout"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [
+        {
+          "id": "holdout-youtube-spotify-exact-target",
+          "title": "Northern Lights",
+          "artists": [
+            "Fixture Artist holdout"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        }
+      ],
+      "acceptableIds": [
+        "holdout-youtube-spotify-exact-target"
+      ],
+      "noMatch": false
+    },
+    {
+      "id": "holdout-youtube-spotify-live",
+      "direction": "youtube-spotify",
+      "family": "fixture-holdout-live",
+      "source": {
+        "id": "holdout-youtube-spotify-live-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist holdout"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [
+        {
+          "id": "holdout-youtube-spotify-live-target",
+          "title": "Northern Lights (Live)",
+          "artists": [
+            "Fixture Artist holdout"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        }
+      ],
+      "acceptableIds": [
+        "holdout-youtube-spotify-live-absent-correct"
+      ],
+      "noMatch": false
+    },
+    {
+      "id": "holdout-youtube-spotify-missing",
+      "direction": "youtube-spotify",
+      "family": "fixture-holdout-missing",
+      "source": {
+        "id": "holdout-youtube-spotify-missing-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist holdout"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [],
+      "acceptableIds": [],
+      "noMatch": true
+    },
+    {
+      "id": "holdout-youtube-spotify-tie",
+      "direction": "youtube-spotify",
+      "family": "fixture-holdout-tie",
+      "source": {
+        "id": "holdout-youtube-spotify-tie-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist holdout"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [
+        {
+          "id": "holdout-youtube-spotify-tie-target",
+          "title": "Northern Lights",
+          "artists": [
+            "Fixture Artist holdout"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        },
+        {
+          "id": "holdout-youtube-spotify-tie-alternate",
+          "title": "Northern Lights",
+          "artists": [
+            "Fixture Artist holdout"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        }
+      ],
+      "acceptableIds": [
+        "holdout-youtube-spotify-tie-target"
+      ],
+      "noMatch": false
+    }
+  ]
+}

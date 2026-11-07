@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "split": "calibration",
+  "provenance": "Synthetic behavior fixtures authored for automated tests; not independently verified real music labels. No accuracy claim is supported.",
+  "independentLabels": false,
+  "cases": [
+    {
+      "id": "calibration-spotify-youtube-exact",
+      "direction": "spotify-youtube",
+      "family": "fixture-calibration-exact",
+      "source": {
+        "id": "calibration-spotify-youtube-exact-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist calibration"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [
+        {
+          "id": "calibration-spotify-youtube-exact-target",
+          "title": "Northern Lights",
+          "artists": [
+            "Fixture Artist calibration"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        }
+      ],
+      "acceptableIds": [
+        "calibration-spotify-youtube-exact-target"
+      ],
+      "noMatch": false
+    },
+    {
+      "id": "calibration-spotify-youtube-live",
+      "direction": "spotify-youtube",
+      "family": "fixture-calibration-live",
+      "source": {
+        "id": "calibration-spotify-youtube-live-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist calibration"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [
+        {
+          "id": "calibration-spotify-youtube-live-target",
+          "title": "Northern Lights (Live)",
+          "artists": [
+            "Fixture Artist calibration"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        }
+      ],
+      "acceptableIds": [
+        "calibration-spotify-youtube-live-absent-correct"
+      ],
+      "noMatch": false
+    },
+    {
+      "id": "calibration-spotify-youtube-missing",
+      "direction": "spotify-youtube",
+      "family": "fixture-calibration-missing",
+      "source": {
+        "id": "calibration-spotify-youtube-missing-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist calibration"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [],
+      "acceptableIds": [],
+      "noMatch": true
+    },
+    {
+      "id": "calibration-spotify-youtube-tie",
+      "direction": "spotify-youtube",
+      "family": "fixture-calibration-tie",
+      "source": {
+        "id": "calibration-spotify-youtube-tie-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist calibration"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [
+        {
+          "id": "calibration-spotify-youtube-tie-target",
+          "title": "Northern Lights",
+          "artists": [
+            "Fixture Artist calibration"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        },
+        {
+          "id": "calibration-spotify-youtube-tie-alternate",
+          "title": "Northern Lights",
+          "artists": [
+            "Fixture Artist calibration"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        }
+      ],
+      "acceptableIds": [
+        "calibration-spotify-youtube-tie-target"
+      ],
+      "noMatch": false
+    },
+    {
+      "id": "calibration-youtube-spotify-exact",
+      "direction": "youtube-spotify",
+      "family": "fixture-calibration-exact",
+      "source": {
+        "id": "calibration-youtube-spotify-exact-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist calibration"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [
+        {
+          "id": "calibration-youtube-spotify-exact-target",
+          "title": "Northern Lights",
+          "artists": [
+            "Fixture Artist calibration"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        }
+      ],
+      "acceptableIds": [
+        "calibration-youtube-spotify-exact-target"
+      ],
+      "noMatch": false
+    },
+    {
+      "id": "calibration-youtube-spotify-live",
+      "direction": "youtube-spotify",
+      "family": "fixture-calibration-live",
+      "source": {
+        "id": "calibration-youtube-spotify-live-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist calibration"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [
+        {
+          "id": "calibration-youtube-spotify-live-target",
+          "title": "Northern Lights (Live)",
+          "artists": [
+            "Fixture Artist calibration"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        }
+      ],
+      "acceptableIds": [
+        "calibration-youtube-spotify-live-absent-correct"
+      ],
+      "noMatch": false
+    },
+    {
+      "id": "calibration-youtube-spotify-missing",
+      "direction": "youtube-spotify",
+      "family": "fixture-calibration-missing",
+      "source": {
+        "id": "calibration-youtube-spotify-missing-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist calibration"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [],
+      "acceptableIds": [],
+      "noMatch": true
+    },
+    {
+      "id": "calibration-youtube-spotify-tie",
+      "direction": "youtube-spotify",
+      "family": "fixture-calibration-tie",
+      "source": {
+        "id": "calibration-youtube-spotify-tie-source",
+        "title": "Northern Lights",
+        "artists": [
+          "Fixture Artist calibration"
+        ],
+        "durationMs": 180000,
+        "url": "https://example.invalid/source"
+      },
+      "candidates": [
+        {
+          "id": "calibration-youtube-spotify-tie-target",
+          "title": "Northern Lights",
+          "artists": [
+            "Fixture Artist calibration"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        },
+        {
+          "id": "calibration-youtube-spotify-tie-alternate",
+          "title": "Northern Lights",
+          "artists": [
+            "Fixture Artist calibration"
+          ],
+          "durationMs": 180000,
+          "url": "https://example.invalid/target"
+        }
+      ],
+      "acceptableIds": [
+        "calibration-youtube-spotify-tie-target"
+      ],
+      "noMatch": false
+    }
+  ]
+}

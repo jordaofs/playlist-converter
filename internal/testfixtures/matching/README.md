@@ -1,0 +1,7 @@
+# Matching evaluation fixtures
+
+These small datasets are synthetic behavior examples, not the 400 independently labeled real cases required by the implementation plan. The CLI deliberately fails its release gate for these files, even if its measured synthetic precision is high. Do not set `independentLabels` to true without independent review of every label and recorded provenance.
+
+Schema version 1: `split` is `calibration` or `holdout`; `provenance` records source/review method/date; `independentLabels` records whether the labels are verified. Each case has unique `id`, `direction` (`spotify-youtube` or `youtube-spotify`), `family` (recording/artist grouping), `source`, retrieved `candidates`, and either nonempty `acceptableIds` or `noMatch:true`. An unavailable expected target may appear in acceptable IDs without appearing in retrieved candidates, measuring retrieval failure rather than mislabeling it as a catalog absence.
+
+Separate recording/artist families across calibration and holdout. The evaluator rejects overlapping provider source IDs even if family labels differ, and validates that the input files have the expected splits. Freeze calibration-derived thresholds before evaluating holdout. The release evaluator requires at least 100 held-out cases per direction, nonzero accepted cases, the requested precision and coverage gates, and independent labels. It reports a Wilson 95% interval; passing observed precision does not prove a universal 99% guarantee. Collecting and independently checking the real dataset remains pending.

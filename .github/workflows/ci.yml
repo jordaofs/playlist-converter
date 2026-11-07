@@ -1,0 +1,37 @@
+name: Verify
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+      - run: npm install --global pnpm@12.11.2
+      - run: go mod download
+      - run: go vet ./...
+      - run: go test -race -coverprofile=coverage.out ./...
+      - run: bash scripts/check-coverage.sh coverage.out 80
+      - run: test -z "$(gofmt -l cmd internal)"
+      - run: pnpm install --frozen-lockfile
+        working-directory: web
+      - run: pnpm typecheck && pnpm lint && pnpm format:check && pnpm exec vitest run --coverage && pnpm build
+        working-directory: web
+      - run: pnpm exec playwright install --with-deps chromium
+        working-directory: web
+      - run: pnpm exec playwright test
+        working-directory: web
+      - run: go build ./cmd/server
+
+      - run: python3 -c 'import yaml' || (sudo apt-get update && sudo apt-get install -y python3-yaml)
+      - run: bash scripts/workflow.test.sh
+      - run: bash scripts/release-check.test.sh && bash scripts/release-check.sh
+      - run: docker build -t playlist-converter:ci .
