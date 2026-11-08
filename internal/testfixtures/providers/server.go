@@ -7,16 +7,29 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 )
 
+// Modes reproduce provider behaviour seen in production (2026-11-08):
+//   - duplicate_callback: the consent page delivers the callback twice; the
+//     first request is aborted while it exchanges the code, then the browser
+//     navigates to the same callback (Google, Firefox and Chromium).
+//   - lagging: YouTube reads trail writes. A new playlist is missing on its
+//     first read, and each read right after an insert omits that song.
+//   - deny_source: Spotify answers 403 when reading the source playlist.
+//   - quota, timeout_create, timeout_append: one-shot failures.
 type Server struct {
-	mu      sync.Mutex
-	Mode    string
-	lists   map[string][]string
-	markers map[string]string
+	mu        sync.Mutex
+	Mode      string
+	lists     map[string][]string
+	markers   map[string]string
+	hideMeta  map[string]int // reads of a new playlist that still answer "missing"
+	hideItems map[string]int // reads that still omit the latest inserted song
 }
 
-func New() *Server { return &Server{lists: map[string][]string{}, markers: map[string]string{}} }
+func New() *Server {
+	return &Server{lists: map[string][]string{}, markers: map[string]string{}, hideMeta: map[string]int{}, hideItems: map[string]int{}}
+}
 func (s *Server) Scenario(w http.ResponseWriter, r *http.Request) {
 	var b struct {
 		Mode string `json:"mode"`
@@ -49,10 +62,23 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path
 	if strings.HasSuffix(p, "/auth") {
 		q := r.URL.Query()
-		http.Redirect(w, r, q.Get("redirect_uri")+"?state="+q.Get("state")+"&code=test", 302)
+		callback := q.Get("redirect_uri") + "?state=" + q.Get("state") + "&code=test"
+		if s.Mode == "duplicate_callback" {
+			w.Header().Set("Content-Type", "text/html")
+			// First delivery: sent with the browser's cookies, then aborted
+			// mid-exchange (Caddy logged status 0). Second: a normal navigation.
+			fmt.Fprintf(w, `<!doctype html><script>const u=%q;const c=new AbortController();`+
+				`fetch(u,{credentials:"include",mode:"no-cors",signal:c.signal}).catch(()=>{});`+
+				`setTimeout(()=>c.abort(),100);setTimeout(()=>location.replace(u),150)</script>`, callback)
+			return
+		}
+		http.Redirect(w, r, callback, 302)
 		return
 	}
 	if strings.HasSuffix(p, "/token") {
+		if s.Mode == "duplicate_callback" {
+			time.Sleep(600 * time.Millisecond) // keep the first callback in flight
+		}
 		send(map[string]any{"access_token": "fixture", "refresh_token": "fixture-refresh", "token_type": "Bearer", "expires_in": 3600})
 		return
 	}
@@ -121,6 +147,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.markers[id] = b.Description
 		if yt {
 			s.markers[id] = b.Snippet.Description
+			if s.Mode == "lagging" {
+				s.hideMeta[id] = 1
+			}
 		}
 		if s.Mode == "timeout_create" {
 			s.Mode = "normal"
@@ -139,6 +168,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if path == "/playlistItems" {
 		id = r.URL.Query().Get("playlistId")
 	}
+	if s.Mode == "deny_source" && !yt && r.Method == "GET" && id != "" && !strings.HasPrefix(id, "created") {
+		w.WriteHeader(403)
+		send(map[string]any{"error": map[string]any{"status": 403, "message": "Forbidden"}})
+		return
+	}
 	if r.Method == "POST" && (path == "/playlistItems" || strings.HasSuffix(path, "/items")) {
 		var b struct {
 			URIs    []string `json:"uris"`
@@ -153,6 +187,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if yt {
 			id = b.Snippet.PlaylistID
 			s.lists[id] = append(s.lists[id], b.Snippet.Resource.VideoID)
+			if s.Mode == "lagging" {
+				s.hideItems[id] = 1
+			}
 		} else {
 			for _, uri := range b.URIs {
 				s.lists[id] = append(s.lists[id], strings.TrimPrefix(uri, "spotify:track:"))
@@ -180,6 +217,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if !exists {
 			ids = []string{"song1", "song2", "song1"}
 		}
+		if yt && s.hideItems[id] > 0 && len(ids) > 0 {
+			s.hideItems[id]--
+			ids = ids[:len(ids)-1]
+		}
 		items := []any{}
 		for pos, song := range ids {
 			if yt {
@@ -192,6 +233,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if id != "" {
+		if yt && s.hideMeta[id] > 0 {
+			s.hideMeta[id]--
+			send(map[string]any{"items": []any{}})
+			return
+		}
 		if yt {
 			send(map[string]any{"items": []any{meta(id)}})
 		} else {
