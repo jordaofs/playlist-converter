@@ -10,6 +10,14 @@ import (
 	"time"
 )
 
+// CallbackError reports why an OAuth callback failed. Code is the step that
+// failed; Cause is the provider's own error code, when it gave one. Both are
+// short identifiers, never tokens or account data; callers still sanitize
+// Cause before logging because it comes from the provider.
+type CallbackError struct{ Code, Cause string }
+
+func (e *CallbackError) Error() string { return e.Code }
+
 func (m *Manager) Begin(ctx context.Context, s Session, provider string) (string, error) {
 	cfg := m.OAuth[provider]
 	if cfg == nil || cfg.ClientID == "" {
@@ -26,22 +34,32 @@ func (m *Manager) Finish(ctx context.Context, w http.ResponseWriter, s Session, 
 	cfg := m.OAuth[provider]
 	adapter := m.Providers[provider]
 	if cfg == nil || adapter == nil || state == "" || len(state) > 256 || code == "" || len(code) > 4096 {
-		return errors.New("invalid_oauth_callback")
+		return &CallbackError{Code: "invalid_oauth_callback"}
 	}
 	var verifier string
 	e := m.DB.QueryRowContext(ctx, "DELETE FROM oauth_attempts WHERE state=? AND principal_id=? AND session_id=? AND provider=? AND expires_at>? RETURNING verifier", hash(state), s.PrincipalID, s.ID, provider, time.Now().Unix()).Scan(&verifier)
 	if e != nil {
-		return errors.New("invalid_oauth_state")
+		return &CallbackError{Code: "invalid_oauth_state"}
 	}
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, m.Client)
 	token, e := cfg.Exchange(ctx, code, oauth2.VerifierOption(verifier))
 	if e != nil {
-		return errors.New("oauth_exchange_failed")
+		cause := "network"
+		var re *oauth2.RetrieveError
+		if errors.As(e, &re) {
+			cause = re.ErrorCode
+		}
+		return &CallbackError{Code: "oauth_exchange_failed", Cause: cause}
 	}
 	next := domain.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken, Expiry: token.Expiry}
 	id, e := adapter.Identity(ctx, next)
 	if e != nil {
-		return errors.New("provider_identity_failed")
+		cause := "other"
+		var pe *domain.ProviderError
+		if errors.As(e, &pe) {
+			cause = pe.Code
+		}
+		return &CallbackError{Code: "provider_identity_failed", Cause: cause}
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -52,7 +70,7 @@ func (m *Manager) Finish(ctx context.Context, w http.ResponseWriter, s Session, 
 		return e
 	}
 	if old != "" && old != id.ID && m.Active != nil && m.Active(ctx, s.PrincipalID) {
-		return errors.New("account_change_requires_new_conversion")
+		return &CallbackError{Code: "account_change_requires_new_conversion"}
 	}
 	// Providers may omit a refresh token on repeated consent; retain it only for the same identity.
 	if old == id.ID && next.RefreshToken == "" {

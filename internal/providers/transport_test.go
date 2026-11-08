@@ -18,6 +18,9 @@ func TestTransport(t *testing.T) {
 	}{
 		{401, `{"secret":"do-not-leak"}`, "authorization_required", false},
 		{403, `{"error":{"errors":[{"reason":"quotaExceeded"}]}}`, "quota_exhausted", false},
+		{403, `{"error":{"errors":[{"reason":"accessNotConfigured"}]}}`, "api_not_enabled", false},
+		{401, `{"error":{"errors":[{"reason":"youtubeSignupRequired"}]}}`, "channel_selection_required", false},
+		{403, `{"error":{"errors":[{"reason":"youtubeSignupRequired"}]}}`, "channel_selection_required", false},
 		{403, `{}`, "access_denied", false}, {404, `{}`, "not_found", false},
 		{429, `{}`, "quota_exhausted", false}, {500, `{}`, "provider_unavailable", true},
 		{400, `{}`, "provider_rejected", false},

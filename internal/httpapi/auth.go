@@ -1,9 +1,12 @@
 package httpapi
 
 import (
+	"errors"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"playlistconverter/internal/auth"
+	"regexp"
 )
 
 func (s *Server) session(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +49,18 @@ func (s *Server) finishAuth(w http.ResponseWriter, r *http.Request, v auth.Sessi
 		http.Redirect(w, r, "/?auth=denied", http.StatusSeeOther)
 		return
 	}
-	if e := s.Auth.Finish(r.Context(), w, v, r.PathValue("provider"), r.URL.Query().Get("state"), r.URL.Query().Get("code")); e != nil {
+	provider := r.PathValue("provider")
+	if e := s.Auth.Finish(r.Context(), w, v, provider, r.URL.Query().Get("state"), r.URL.Query().Get("code")); e != nil {
+		reason, cause := "internal", ""
+		var ce *auth.CallbackError
+		if errors.As(e, &ce) {
+			reason, cause = ce.Code, ce.Cause
+		}
+		s.logAuthFailure(provider, reason, cause)
+		if cause == "channel_selection_required" {
+			http.Redirect(w, r, "/?auth=no_channel", http.StatusSeeOther)
+			return
+		}
 		http.Redirect(w, r, "/?auth=failed", http.StatusSeeOther)
 		return
 	}
@@ -81,4 +95,30 @@ func (s *Server) deleteSession(w http.ResponseWriter, r *http.Request, v auth.Se
 	}
 	http.SetCookie(w, &http.Cookie{Name: "converter_session", Path: "/", MaxAge: -1, HttpOnly: true, Secure: s.Auth.Secure, SameSite: http.SameSiteLaxMode})
 	reply(w, r, 200, map[string]bool{"deleted": true}, "")
+}
+
+var logCode = regexp.MustCompile(`^[a-z0-9_]{1,64}$`)
+
+// logAuthFailure records a failed OAuth callback with a closed field set:
+// provider (spotify, youtube or other), the failed step and the provider's
+// error code. Codes that are not short identifiers become "other".
+func (s *Server) logAuthFailure(provider, reason, cause string) {
+	if provider != "spotify" && provider != "youtube" {
+		provider = "other"
+	}
+	if !logCode.MatchString(reason) {
+		reason = "other"
+	}
+	attrs := []any{"provider", provider, "reason", reason}
+	if cause != "" {
+		if !logCode.MatchString(cause) {
+			cause = "other"
+		}
+		attrs = append(attrs, "cause", cause)
+	}
+	log := s.Log
+	if log == nil {
+		log = slog.Default()
+	}
+	log.Warn("auth.failed", attrs...)
 }

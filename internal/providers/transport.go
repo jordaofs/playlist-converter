@@ -88,25 +88,11 @@ func responseError(status int, retry string, data []byte, mutation bool) error {
 	code := "provider_rejected"
 	switch {
 	case status == 401:
-		code = "authorization_required"
+		code = reasonCode(data, "authorization_required")
 	case status == 429:
 		code = "quota_exhausted"
 	case status == 403:
-		code = "access_denied"
-		var body struct {
-			Error struct {
-				Errors []struct {
-					Reason string `json:"reason"`
-				} `json:"errors"`
-			} `json:"error"`
-		}
-		if json.Unmarshal(data, &body) == nil {
-			for _, e := range body.Error.Errors {
-				if e.Reason == "quotaExceeded" || e.Reason == "dailyLimitExceeded" || e.Reason == "rateLimitExceeded" || e.Reason == "userRateLimitExceeded" {
-					code = "quota_exhausted"
-				}
-			}
-		}
+		code = reasonCode(data, "access_denied")
 	case status == 404:
 		code = "not_found"
 	case status >= 500:
@@ -122,5 +108,31 @@ func responseError(status int, retry string, data []byte, mutation bool) error {
 		}
 	}
 	return &domain.ProviderError{Code: code, RetryAfter: wait, UnknownOutcome: mutation && status >= 500}
+}
+
+// reasonCode maps Google API error reasons to closed codes; other providers
+// and unknown reasons keep the status-based fallback.
+func reasonCode(data []byte, fallback string) string {
+	var body struct {
+		Error struct {
+			Errors []struct {
+				Reason string `json:"reason"`
+			} `json:"errors"`
+		} `json:"error"`
+	}
+	if json.Unmarshal(data, &body) != nil {
+		return fallback
+	}
+	for _, e := range body.Error.Errors {
+		switch e.Reason {
+		case "quotaExceeded", "dailyLimitExceeded", "rateLimitExceeded", "userRateLimitExceeded":
+			return "quota_exhausted"
+		case "accessNotConfigured":
+			return "api_not_enabled"
+		case "youtubeSignupRequired":
+			return "channel_selection_required"
+		}
+	}
+	return fallback
 }
 func Error(code string) error { return &domain.ProviderError{Code: code} }

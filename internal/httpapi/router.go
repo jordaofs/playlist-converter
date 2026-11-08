@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"playlistconverter/internal/auth"
 	"playlistconverter/internal/config"
@@ -24,6 +25,8 @@ type Server struct {
 	Engine Engine
 	// RateLimitBuckets caps distinct clients tracked per minute (default 10000).
 	RateLimitBuckets int
+	// Log receives auth.failed events; nil uses slog.Default().
+	Log *slog.Logger
 }
 
 func (s *Server) Handler() http.Handler {

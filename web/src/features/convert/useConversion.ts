@@ -2,17 +2,22 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/api';
 import type { Conversion, Decision, Session } from '../../lib/types';
 const active = new Set(['queued', 'reading', 'matching', 'publishing']);
+// Results of the OAuth callback redirect (`/?auth=<result>`).
+const authMessages: Record<string, string> = {
+  denied: 'Connection was cancelled. You can connect again when you’re ready.',
+  failed: 'We couldn’t connect your account. Please try again.',
+  no_channel:
+    'Your Google account doesn’t have a YouTube channel yet. Create one on youtube.com, then connect again.',
+};
 export function useConversion() {
   const [session, setSession] = useState<Session | null>(null);
   const [job, setJob] = useState<Conversion | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(() => {
     const result = new URLSearchParams(window.location.search).get('auth');
-    return result === 'denied'
-      ? 'Connection was cancelled. You can connect again when you’re ready.'
-      : result === 'failed'
-        ? 'We couldn’t connect your account. Please try again.'
-        : '';
+    return result && Object.hasOwn(authMessages, result)
+      ? authMessages[result]
+      : '';
   });
   const [loading, setLoading] = useState(true);
   const inFlight = useRef(false);

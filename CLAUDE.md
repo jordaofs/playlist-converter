@@ -27,7 +27,7 @@ Commands below are implemented. See reports for verification results.
 - Use TDD for implementation and at least 80% application test coverage.
 - Keep helpers small and feature-focused; avoid in-place domain-state mutation.
 - This repository is public. Never add hostnames, IPs, SSH details, server paths, production compose files or secrets; operations live in a separate private repository. Run `RELEASE_DENYLIST_FILE=.release-denylist bash scripts/release-check.sh` before publishing.
-- Logs must not contain playlist names, songs, links, account identities or tokens; conversion events use the closed field set in `internal/conversions/events.go`.
+- Logs must not contain playlist names, songs, links, account identities or tokens; conversion events use the closed field set in `internal/conversions/events.go`; failed OAuth callbacks log only `auth.failed` with provider, reason and cause codes (`internal/httpapi/auth.go`).
 - The maintainer handles all Git operations (init, commit, push, tags).
 ### Gates (all must pass before implementation is done)
 - Typecheck, lint, format check, unit/integration tests, coverage, build, critical E2E tests.

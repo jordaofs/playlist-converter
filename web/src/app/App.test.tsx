@@ -130,6 +130,29 @@ it('resumes partial conversions and disconnects', async () => {
   );
   await screen.findByRole('link', { name: /Connect Spotify/ });
 });
+it('explains how to fix a Google account without a YouTube channel', async () => {
+  window.history.replaceState(null, '', '/?auth=no_channel');
+  try {
+    render(<App />);
+    expect(
+      await screen.findByText(
+        'Your Google account doesn’t have a YouTube channel yet. Create one on youtube.com, then connect again.',
+      ),
+    ).toBeVisible();
+  } finally {
+    window.history.replaceState(null, '', '/');
+  }
+});
+it('ignores unknown auth results, including inherited object keys', async () => {
+  window.history.replaceState(null, '', '/?auth=constructor');
+  try {
+    render(<App />);
+    await screen.findByRole('main');
+    expect(screen.queryByRole('alert')).toBeNull();
+  } finally {
+    window.history.replaceState(null, '', '/');
+  }
+});
 it('shows an initial connection failure', async () => {
   fail = 'Server unavailable';
   render(<App />);
