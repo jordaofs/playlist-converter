@@ -221,7 +221,28 @@ describe('conversion views', () => {
         job={{ ...job, status: 'failed', error: 'conversion_failed' }}
       />,
     );
-    expect(screen.getByRole('status')).toHaveTextContent('conversion_failed');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Something went wrong on our side. Your original playlist is unchanged.',
+    );
+    rerender(
+      <Result
+        {...props}
+        job={{ ...job, status: 'failed', error: 'access_denied' }}
+      />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The music service refused access to this playlist. Only playlists you created with the connected account can be converted.',
+    );
+    expect(screen.queryByRole('button', { name: /Resume/ })).toBeNull();
+    rerender(
+      <Result
+        {...props}
+        job={{ ...job, status: 'failed', error: 'constructor' }}
+      />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your original playlist is unchanged.',
+    );
     rerender(<Result {...props} job={{ ...job, status: 'cancelled' }} />);
     expect(screen.getByText('No more changes will be made.')).toBeVisible();
   });

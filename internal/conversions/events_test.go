@@ -93,13 +93,16 @@ func TestFailureAndPauseEvents(t *testing.T) {
 		run               func(domain.Conversion) error
 	}{
 		{"rejected", "conversion.failed", "playlist_not_owned", func(c domain.Conversion) error { return s.reject(ctx, c, "playlist_not_owned") }},
-		{"provider pause", "conversion.paused", "rate_limited", func(c domain.Conversion) error {
-			return s.handle(ctx, c, &domain.ProviderError{Code: "rate_limited"})
+		{"provider pause", "conversion.paused", "quota_exhausted", func(c domain.Conversion) error {
+			return s.handle(ctx, c, &domain.ProviderError{Code: "quota_exhausted"})
+		}},
+		{"permanent refusal", "conversion.failed", "access_denied", func(c domain.Conversion) error {
+			return s.handle(ctx, c, &domain.ProviderError{Code: "access_denied"})
 		}},
 		{"unknown outcome", "conversion.paused", "unknown_remote_outcome", func(c domain.Conversion) error {
 			return s.handle(ctx, c, &domain.ProviderError{Code: "network", UnknownOutcome: true})
 		}},
-		{"raw provider text is not a reason", "conversion.paused", "other", func(c domain.Conversion) error {
+		{"raw provider text is not a reason", "conversion.failed", "other", func(c domain.Conversion) error {
 			return s.handle(ctx, c, &domain.ProviderError{Code: "<html> https://x?token=SECRET"})
 		}},
 		{"internal failure", "conversion.failed", "conversion_failed", func(c domain.Conversion) error {

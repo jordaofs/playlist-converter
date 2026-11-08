@@ -307,9 +307,27 @@ func (s *Service) credentials(ctx context.Context, c domain.Conversion, provider
 	}
 	return t, nil
 }
+
+// retryable lists provider errors that a later resume can get past: waiting,
+// reconnecting the same account, or a provider outage. Anything else is a
+// refusal that repeats on every attempt.
+var retryable = map[string]bool{
+	"quota_exhausted":           true,
+	"authorization_required":    true,
+	"account_changed":           true,
+	"provider_unavailable":      true,
+	"invalid_provider_response": true,
+}
+
 func (s *Service) handle(ctx context.Context, c domain.Conversion, err error) error {
 	var pe *domain.ProviderError
 	if errors.As(err, &pe) {
+		// Before a destination exists nothing remote has changed, so a
+		// refusal that a retry cannot fix ends the conversion instead of
+		// pausing it into a resume loop.
+		if c.DestinationID == "" && !pe.UnknownOutcome && !retryable[pe.Code] {
+			return s.reject(ctx, c, code(pe.Code))
+		}
 		c.PauseReason = pe.Code
 		if pe.UnknownOutcome {
 			c.PauseReason = "unknown_remote_outcome"
