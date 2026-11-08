@@ -81,11 +81,13 @@ type Conversion struct {
 	// DestinationCreatedAt is when this conversion created its destination;
 	// zero for conversions created before the field existed.
 	DestinationCreatedAt time.Time `json:"destinationCreatedAt,omitempty"`
-	Name                 string    `json:"name,omitempty"`
-	Published            int       `json:"published"`
-	CreatedAt            time.Time `json:"createdAt"`
-	UpdatedAt            time.Time `json:"updatedAt"`
-	NextAttempt          time.Time `json:"nextAttempt,omitempty"`
+	// AppendedAt is when the latest append was sent, saved before sending.
+	AppendedAt  time.Time `json:"appendedAt,omitempty"`
+	Name        string    `json:"name,omitempty"`
+	Published   int       `json:"published"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+	NextAttempt time.Time `json:"nextAttempt,omitempty"`
 }
 type Decision struct {
 	ItemID      string `json:"itemId"`

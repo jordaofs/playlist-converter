@@ -314,7 +314,29 @@ func (s *Service) credentials(ctx context.Context, c domain.Conversion, provider
 const (
 	destinationGrace = 3 * time.Minute  // how long a new destination may be missing
 	destinationRetry = 10 * time.Second // wait between quiet retries
+	appendGrace      = 2 * time.Minute  // how long an acknowledged append may be invisible
+	appendRetry      = 3 * time.Second  // wait between re-reads of a recent append
 )
+
+// retryLater schedules the next step without pausing or reporting: reads
+// lag behind writes on YouTube, and only reading again is safe.
+func (s *Service) retryLater(ctx context.Context, c domain.Conversion, wait time.Duration) error {
+	c.NextAttempt = time.Now().Add(wait)
+	c.Status = "publishing"
+	if _, err := s.save(ctx, c); err != nil {
+		return fmt.Errorf("save failure: %w", err)
+	}
+	return nil
+}
+
+// lagging reports a destination read that is an unchanged, shorter copy of
+// what was written, shortly after an append: YouTube has not caught up yet
+// (production 2026-11-08: 3 songs added, the read showed 2). Anything else
+// is a real change and keeps pausing.
+func lagging(c domain.Conversion, songs []domain.Song, ids []string, want int) bool {
+	return len(songs) < want && exactPrefix(songs, ids, len(songs)) &&
+		!c.AppendedAt.IsZero() && time.Since(c.AppendedAt) < appendGrace
+}
 
 var retryable = map[string]bool{
 	"quota_exhausted":           true,
@@ -338,12 +360,7 @@ func (s *Service) handle(ctx context.Context, c domain.Conversion, err error) er
 		// new; a playlist that stays missing still pauses for the user.
 		if pe.Code == "not_found" && c.DestinationID != "" && !c.DestinationCreatedAt.IsZero() &&
 			time.Since(c.DestinationCreatedAt) < destinationGrace {
-			c.NextAttempt = time.Now().Add(destinationRetry)
-			c.Status = "publishing"
-			if _, err := s.save(ctx, c); err != nil {
-				return fmt.Errorf("save failure: %w", err)
-			}
-			return nil
+			return s.retryLater(ctx, c, destinationRetry)
 		}
 		c.PauseReason = pe.Code
 		if pe.UnknownOutcome {

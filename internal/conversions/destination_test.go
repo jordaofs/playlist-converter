@@ -14,6 +14,9 @@ import (
 type laggingTarget struct {
 	*fakeProvider
 	readMisses, appendMisses int
+	// hide makes the next reads omit the last appended song, as YouTube did
+	// (production 2026-11-08: 3 songs in the playlist, the read showed 2).
+	hide int
 }
 
 func (l *laggingTarget) ReadPlaylist(ctx context.Context, token domain.Token, id string) (domain.Playlist, error) {
@@ -21,7 +24,12 @@ func (l *laggingTarget) ReadPlaylist(ctx context.Context, token domain.Token, id
 		l.readMisses--
 		return domain.Playlist{}, &domain.ProviderError{Code: "not_found"}
 	}
-	return l.fakeProvider.ReadPlaylist(ctx, token, id)
+	p, err := l.fakeProvider.ReadPlaylist(ctx, token, id)
+	if id == "destination" && l.hide > 0 && len(p.Songs) > 0 {
+		l.hide--
+		p.Songs = p.Songs[:len(p.Songs)-1]
+	}
+	return p, err
 }
 
 func (l *laggingTarget) Append(ctx context.Context, token domain.Token, id string, ids []string) error {
@@ -145,5 +153,76 @@ func TestDestinationWithoutTimestampPauses(t *testing.T) {
 	c, _ = s.Get(context.Background(), "p", c.ID)
 	if c.PauseReason != "not_found" || c.Status != "partial" {
 		t.Fatalf("status=%q pause=%q", c.Status, c.PauseReason)
+	}
+}
+
+// An acknowledged append that the next read does not show yet is re-read
+// later, never appended again.
+func TestAppendNotYetVisibleRetries(t *testing.T) {
+	s, target, c := publishing(t)
+	target.hide = 2
+	if err := s.Step(context.Background(), c.ID); err != nil {
+		t.Fatalf("quiet retry reported %v", err)
+	}
+	c, _ = s.Get(context.Background(), "p", c.ID)
+	if c.PauseReason != "" || c.Status != "publishing" || c.NextAttempt.IsZero() {
+		t.Fatalf("status=%q pause=%q next=%v", c.Status, c.PauseReason, c.NextAttempt)
+	}
+	c = finish(t, s, c.ID)
+	if c.Status != "completed" || c.Published != 2 || len(target.dest) != 2 || target.appends != 2 {
+		t.Fatalf("status=%q pause=%q published=%d dest=%d appends=%d", c.Status, c.PauseReason, c.Published, len(target.dest), target.appends)
+	}
+}
+
+// The check before the next append may also see the playlist one song behind.
+func TestStaleReadBeforeNextAppendRetries(t *testing.T) {
+	s, target, c := publishing(t)
+	_ = s.Step(context.Background(), c.ID) // append and confirm song 1
+	c, _ = s.Get(context.Background(), "p", c.ID)
+	if c.Published != 1 {
+		t.Fatalf("published=%d pause=%q", c.Published, c.PauseReason)
+	}
+	target.hide = 1
+	_ = s.Step(context.Background(), c.ID)
+	c, _ = s.Get(context.Background(), "p", c.ID)
+	if c.PauseReason != "" || target.appends != 1 {
+		t.Fatalf("stale read paused=%q appends=%d", c.PauseReason, target.appends)
+	}
+	c = finish(t, s, c.ID)
+	if c.Status != "completed" || len(target.dest) != 2 || target.appends != 2 {
+		t.Fatalf("status=%q dest=%d appends=%d", c.Status, len(target.dest), target.appends)
+	}
+}
+
+// After the grace period a write that never shows up stays ambiguous.
+func TestAppendStillMissingAfterGracePauses(t *testing.T) {
+	s, target, c := publishing(t)
+	target.hide = 1
+	_ = s.Step(context.Background(), c.ID) // append song 1; the read hides it
+	c, _ = s.Get(context.Background(), "p", c.ID)
+	if c.PauseReason != "" || c.AppendedAt.IsZero() {
+		t.Fatalf("first miss should retry quietly: pause=%q appendedAt=%v", c.PauseReason, c.AppendedAt)
+	}
+	c.AppendedAt = time.Now().Add(-10 * time.Minute)
+	c.NextAttempt = time.Time{}
+	if _, err := s.save(context.Background(), c); err != nil {
+		t.Fatal(err)
+	}
+	target.hide = 1
+	_ = s.Step(context.Background(), c.ID)
+	c, _ = s.Get(context.Background(), "p", c.ID)
+	if c.PauseReason != "unknown_remote_outcome" || target.appends != 1 {
+		t.Fatalf("pause=%q appends=%d", c.PauseReason, target.appends)
+	}
+}
+
+// A destination that differs from what was written still pauses at once.
+func TestUnexpectedDestinationContentPauses(t *testing.T) {
+	s, target, c := publishing(t)
+	target.dest = []domain.Song{{ID: "someone-else"}}
+	_ = s.Step(context.Background(), c.ID)
+	c, _ = s.Get(context.Background(), "p", c.ID)
+	if c.PauseReason != "destination_changed" || target.appends != 0 {
+		t.Fatalf("pause=%q appends=%d", c.PauseReason, target.appends)
 	}
 }

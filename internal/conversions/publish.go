@@ -45,6 +45,9 @@ func (s *Service) publish(ctx context.Context, c domain.Conversion) error {
 		return s.handle(ctx, c, e)
 	}
 	if p.OwnerID != c.TargetIdentity || !exactPrefix(p.Songs, ids, c.Published) {
+		if p.OwnerID == c.TargetIdentity && lagging(c, p.Songs, ids, c.Published) {
+			return s.retryLater(ctx, c, appendRetry)
+		}
 		return s.handle(ctx, c, &domain.ProviderError{Code: "destination_changed"})
 	}
 	if c.Published == len(ids) {
@@ -58,6 +61,10 @@ func (s *Service) publish(ctx context.Context, c domain.Conversion) error {
 	}
 	id := ids[c.Published]
 	if err = s.Store.Intent(ctx, c.ID, store.Operation{Kind: "append", Position: c.Published, TargetID: id}); err != nil {
+		return err
+	}
+	c.AppendedAt = time.Now()
+	if c, err = s.save(ctx, c); err != nil {
 		return err
 	}
 	if err = provider.Append(ctx, token, c.DestinationID, []string{id}); err != nil {

@@ -36,6 +36,12 @@ func (s *Service) reconcile(ctx context.Context, c domain.Conversion, token doma
 		}
 		ids := selected(c)
 		if op.Position >= len(ids) || ids[op.Position] != op.TargetID || p.OwnerID != c.TargetIdentity || !exactPrefix(p.Songs, ids, op.Position+1) {
+			// Read again later; never send the append again (its outcome is
+			// unknown until the destination shows it).
+			if op.Position < len(ids) && ids[op.Position] == op.TargetID && p.OwnerID == c.TargetIdentity &&
+				lagging(c, p.Songs, ids, op.Position+1) {
+				return s.retryLater(ctx, c, appendRetry)
+			}
 			return s.handle(ctx, c, &domain.ProviderError{Code: "unknown_remote_outcome", UnknownOutcome: true})
 		}
 		c.Published = op.Position + 1
