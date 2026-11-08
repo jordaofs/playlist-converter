@@ -63,26 +63,29 @@ type Item struct {
 	Reason     string      `json:"reason,omitempty"`
 }
 type Conversion struct {
-	ID             string    `json:"id"`
-	PrincipalID    string    `json:"-"`
-	SourceProvider string    `json:"sourceProvider"`
-	TargetProvider string    `json:"targetProvider"`
-	SourceID       string    `json:"sourceId"`
-	SourceIdentity string    `json:"-"`
-	TargetIdentity string    `json:"-"`
-	SourceName     string    `json:"sourceName"`
-	Status         string    `json:"status"`
-	PauseReason    string    `json:"pauseReason,omitempty"`
-	Error          string    `json:"error,omitempty"`
-	Revision       int       `json:"revision"`
-	Items          []Item    `json:"items"`
-	DestinationID  string    `json:"destinationId,omitempty"`
-	DestinationURL string    `json:"destinationUrl,omitempty"`
-	Name           string    `json:"name,omitempty"`
-	Published      int       `json:"published"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
-	NextAttempt    time.Time `json:"nextAttempt,omitempty"`
+	ID             string `json:"id"`
+	PrincipalID    string `json:"-"`
+	SourceProvider string `json:"sourceProvider"`
+	TargetProvider string `json:"targetProvider"`
+	SourceID       string `json:"sourceId"`
+	SourceIdentity string `json:"-"`
+	TargetIdentity string `json:"-"`
+	SourceName     string `json:"sourceName"`
+	Status         string `json:"status"`
+	PauseReason    string `json:"pauseReason,omitempty"`
+	Error          string `json:"error,omitempty"`
+	Revision       int    `json:"revision"`
+	Items          []Item `json:"items"`
+	DestinationID  string `json:"destinationId,omitempty"`
+	DestinationURL string `json:"destinationUrl,omitempty"`
+	// DestinationCreatedAt is when this conversion created its destination;
+	// zero for conversions created before the field existed.
+	DestinationCreatedAt time.Time `json:"destinationCreatedAt,omitempty"`
+	Name                 string    `json:"name,omitempty"`
+	Published            int       `json:"published"`
+	CreatedAt            time.Time `json:"createdAt"`
+	UpdatedAt            time.Time `json:"updatedAt"`
+	NextAttempt          time.Time `json:"nextAttempt,omitempty"`
 }
 type Decision struct {
 	ItemID      string `json:"itemId"`

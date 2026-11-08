@@ -66,7 +66,7 @@ The release checker redacts findings and excludes local credentials/data. It is 
 - React/TypeScript/Tailwind UI and Go HTTP API served from one origin.
 - SQLite snapshots, publication intents, idempotency records and quota accounting.
 - One process and serialized worker; no Redis or distributed queue.
-- Meaningful recording variants are preserved. Ambiguous matches require review.
+- Meaningful recording variants are preserved. Ambiguous matches require review; you can accept the best suggestion for all of them in one step and still change any song.
 - After a timed-out write, inspect destination state before retrying. Uncertain results remain paused.
 
 [Architecture](docs/architecture.md) · [Privacy](docs/privacy.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)

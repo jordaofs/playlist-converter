@@ -5,6 +5,7 @@ import (
 	"errors"
 	"playlistconverter/internal/domain"
 	"playlistconverter/internal/store"
+	"time"
 )
 
 func marker(c domain.Conversion) string { return "playlist-converter:" + c.ID }
@@ -32,6 +33,7 @@ func (s *Service) publish(ctx context.Context, c domain.Conversion) error {
 		}
 		c.DestinationID = p.ID
 		c.DestinationURL = p.URL
+		c.DestinationCreatedAt = time.Now()
 		if _, err = s.save(ctx, c); err != nil {
 			return err
 		}

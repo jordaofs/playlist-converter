@@ -1,16 +1,10 @@
 import type { Conversion } from '../../lib/types';
+import { pauseMessage } from './messages';
 const titles: Record<string, string> = {
   queued: 'Your playlist is in line',
   reading: 'Getting your tracklist',
   matching: 'Finding the right recordings',
   publishing: 'Building your new playlist',
-};
-const pauseMessages: Record<string, string> = {
-  quota_exhausted:
-    'The music service needs a little time. Your progress is saved.',
-  authorization_required: 'Reconnect the same music account to keep going.',
-  unknown_remote_outcome:
-    'We’re checking whether the last change reached the music service. Your progress is saved.',
 };
 export function Progress({
   job,
@@ -39,8 +33,8 @@ export function Progress({
       </h2>
       <p role="status">
         {job.pauseReason
-          ? (pauseMessages[job.pauseReason] ??
-            'Your conversion is paused. You can try resuming below.')
+          ? pauseMessage(job.pauseReason) ||
+            'Your conversion is paused. You can try resuming below.'
           : 'You can keep this page open. We’ll save your place as we go.'}
       </p>
       {job.status === 'publishing' && <p>{job.published} songs added</p>}

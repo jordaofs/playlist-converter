@@ -3,6 +3,7 @@ package conversions
 import (
 	"context"
 	"playlistconverter/internal/domain"
+	"time"
 )
 
 func (s *Service) reconcile(ctx context.Context, c domain.Conversion, token domain.Token) error {
@@ -25,6 +26,9 @@ func (s *Service) reconcile(ctx context.Context, c domain.Conversion, token doma
 		}
 		c.DestinationID = found[0].ID
 		c.DestinationURL = found[0].URL
+		if c.DestinationCreatedAt.IsZero() {
+			c.DestinationCreatedAt = time.Now()
+		}
 	case "append":
 		p, e := provider.ReadPlaylist(ctx, token, c.DestinationID)
 		if e != nil {

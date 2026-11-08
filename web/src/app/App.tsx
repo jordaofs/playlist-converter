@@ -112,6 +112,7 @@ export default function App() {
                   job={job}
                   busy={state.busy}
                   onDecision={(decision) => void state.decide(decision)}
+                  onDecisions={(decisions) => void state.decideMany(decisions)}
                   onPublish={(name) => void state.publish(name)}
                   onCancel={() => void state.cancel()}
                 />

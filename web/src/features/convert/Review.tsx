@@ -8,12 +8,14 @@ export function Review({
   job,
   busy,
   onDecision,
+  onDecisions,
   onPublish,
   onCancel,
 }: {
   job: Conversion;
   busy: boolean;
   onDecision: (decision: Decision) => void;
+  onDecisions: (decisions: Decision[]) => void;
   onPublish: (name: string) => void;
   onCancel: () => void;
 }) {
@@ -25,6 +27,19 @@ export function Review({
   const unresolved = job.items.filter(
     (item) => ['review', 'pending'].includes(item.decision) || !item.decision,
   ).length;
+  // The top available candidate for every song still waiting for a choice.
+  // Candidates arrive sorted by score; the user confirms with one click and
+  // can still change any song afterwards.
+  const best: Decision[] = job.items.flatMap((item) => {
+    if (item.decision && !['review', 'pending'].includes(item.decision))
+      return [];
+    const pick = (item.candidates ?? []).find(
+      (candidate) => !candidate.song.unavailable && candidate.song.id,
+    );
+    return pick
+      ? [{ itemId: item.id, candidateId: pick.song.id, action: 'choose' }]
+      : [];
+  });
   const selected = job.items.filter(
     (item) =>
       item.selectedId && ['automatic', 'manual'].includes(item.decision),
@@ -44,6 +59,18 @@ export function Review({
           : 'Everything is ready for your final check.'}{' '}
         Your original playlist stays as it is.
       </p>
+      {best.length > 0 && (
+        <div className="bulk-choice">
+          <button
+            className="secondary-button"
+            disabled={busy}
+            onClick={() => onDecisions(best)}
+          >
+            Use best match for all ({best.length})
+          </button>
+          <span>You can still change any song below.</span>
+        </div>
+      )}
       <ol className="track-list">
         {job.items.map((item) => (
           <li key={item.id} className="track-row">

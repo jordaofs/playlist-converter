@@ -197,6 +197,8 @@ export function useConversion() {
         { revision: job?.revision, decisions: [decision] },
         'PATCH',
       ),
+    decideMany: (decisions: Decision[]) =>
+      mutate('decisions', { revision: job?.revision, decisions }, 'PATCH'),
     publish: (name: string) =>
       mutate('publish', { revision: job?.revision, name }),
     resume: () => mutate('resume'),

@@ -311,6 +311,11 @@ func (s *Service) credentials(ctx context.Context, c domain.Conversion, provider
 // retryable lists provider errors that a later resume can get past: waiting,
 // reconnecting the same account, or a provider outage. Anything else is a
 // refusal that repeats on every attempt.
+const (
+	destinationGrace = 3 * time.Minute  // how long a new destination may be missing
+	destinationRetry = 10 * time.Second // wait between quiet retries
+)
+
 var retryable = map[string]bool{
 	"quota_exhausted":           true,
 	"authorization_required":    true,
@@ -327,6 +332,18 @@ func (s *Service) handle(ctx context.Context, c domain.Conversion, err error) er
 		// pausing it into a resume loop.
 		if c.DestinationID == "" && !pe.UnknownOutcome && !retryable[pe.Code] {
 			return s.reject(ctx, c, code(pe.Code))
+		}
+		// YouTube may not serve a playlist for a short while after creating
+		// it (production, 2026-11-08). Retry quietly while the destination is
+		// new; a playlist that stays missing still pauses for the user.
+		if pe.Code == "not_found" && c.DestinationID != "" && !c.DestinationCreatedAt.IsZero() &&
+			time.Since(c.DestinationCreatedAt) < destinationGrace {
+			c.NextAttempt = time.Now().Add(destinationRetry)
+			c.Status = "publishing"
+			if _, err := s.save(ctx, c); err != nil {
+				return fmt.Errorf("save failure: %w", err)
+			}
+			return nil
 		}
 		c.PauseReason = pe.Code
 		if pe.UnknownOutcome {

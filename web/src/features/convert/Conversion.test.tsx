@@ -54,6 +54,7 @@ describe('conversion views', () => {
         job={job}
         busy={false}
         onDecision={decide}
+        onDecisions={vi.fn()}
         onPublish={publish}
         onCancel={cancel}
       />,
@@ -84,6 +85,7 @@ describe('conversion views', () => {
         job={resolved}
         busy={false}
         onDecision={decide}
+        onDecisions={vi.fn()}
         onPublish={publish}
         onCancel={cancel}
       />,
@@ -102,6 +104,7 @@ describe('conversion views', () => {
     const props = {
       busy: false,
       onDecision: vi.fn(),
+      onDecisions: vi.fn(),
       onPublish: vi.fn(),
       onCancel: vi.fn(),
     };
@@ -245,5 +248,89 @@ describe('conversion views', () => {
     );
     rerender(<Result {...props} job={{ ...job, status: 'cancelled' }} />);
     expect(screen.getByText('No more changes will be made.')).toBeVisible();
+  });
+});
+
+describe('long playlists', () => {
+  const song = (id: string, unavailable?: string) => ({
+    song: {
+      id,
+      title: `Song ${id}`,
+      artists: ['Artist'],
+      durationMs: 180000,
+      url: `https://www.youtube.com/watch?v=${id}`,
+      ...(unavailable ? { unavailable } : {}),
+    },
+    score: 0.8,
+    reasons: ['Similar title'],
+  });
+  const base = job.items[0];
+  const items = [
+    base,
+    {
+      ...base,
+      id: '2',
+      position: 1,
+      candidates: [song('z1', 'region'), song('z2')],
+    },
+    {
+      ...base,
+      id: '3',
+      position: 2,
+      decision: 'automatic',
+      selectedId: 'y1',
+    },
+    { ...base, id: '4', position: 3, candidates: [song('w1', 'deleted')] },
+  ];
+  const props = {
+    busy: false,
+    onDecision: vi.fn(),
+    onPublish: vi.fn(),
+    onCancel: vi.fn(),
+  };
+
+  it('selects the best available match for every song that needs a choice', async () => {
+    const onDecisions = vi.fn();
+    const u = userEvent.setup();
+    render(
+      <Review {...props} job={{ ...job, items }} onDecisions={onDecisions} />,
+    );
+    await u.click(
+      screen.getByRole('button', { name: 'Use best match for all (2)' }),
+    );
+    expect(onDecisions).toHaveBeenCalledTimes(1);
+    expect(onDecisions).toHaveBeenCalledWith([
+      { itemId: '1', candidateId: 'y1', action: 'choose' },
+      { itemId: '2', candidateId: 'z2', action: 'choose' },
+    ]);
+    expect(
+      screen.getByText('You can still change any song below.'),
+    ).toBeVisible();
+  });
+
+  it('hides the bulk action when nothing can be selected', () => {
+    render(
+      <Review
+        {...props}
+        job={{ ...job, items: [items[2], items[3]] }}
+        onDecisions={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /Use best match/ })).toBeNull();
+  });
+
+  it('explains a paused publish instead of showing its code', () => {
+    render(
+      <Result
+        job={{ ...job, status: 'partial', pauseReason: 'not_found' }}
+        busy={false}
+        onNew={vi.fn()}
+        onResume={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'YouTube hasn’t made the new playlist available yet. Resume in a minute to keep adding songs.',
+    );
+    expect(screen.queryByText('not_found')).toBeNull();
   });
 });
