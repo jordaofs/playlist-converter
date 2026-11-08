@@ -44,19 +44,28 @@ func (s *Server) beginAuth(w http.ResponseWriter, r *http.Request, v auth.Sessio
 	}
 	http.Redirect(w, r, link, http.StatusFound)
 }
-func (s *Server) finishAuth(w http.ResponseWriter, r *http.Request, v auth.Session) {
+func (s *Server) finishAuth(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Query().Get("error") != "" {
 		http.Redirect(w, r, "/?auth=denied", http.StatusSeeOther)
 		return
 	}
 	provider := r.PathValue("provider")
-	if e := s.Auth.Finish(r.Context(), w, v, provider, r.URL.Query().Get("state"), r.URL.Query().Get("code")); e != nil {
+	replayed, e := s.Auth.Callback(r.Context(), w, r, provider, r.URL.Query().Get("state"), r.URL.Query().Get("code"))
+	if e != nil && r.Context().Err() != nil {
+		return // the browser left; a duplicate delivery receives the outcome
+	}
+	if e != nil {
 		reason, cause := "internal", ""
 		var ce *auth.CallbackError
-		if errors.As(e, &ce) {
+		switch {
+		case errors.As(e, &ce):
 			reason, cause = ce.Code, ce.Cause
+		case errors.Is(e, auth.ErrSession):
+			reason = "session_required"
 		}
-		s.logAuthFailure(provider, reason, cause)
+		if !replayed {
+			s.logAuthFailure(provider, reason, cause)
+		}
 		if cause == "channel_selection_required" {
 			http.Redirect(w, r, "/?auth=no_channel", http.StatusSeeOther)
 			return

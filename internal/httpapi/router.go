@@ -42,7 +42,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/session", s.session)
 	mux.HandleFunc("DELETE /api/session", s.withSession(s.deleteSession, true))
 	mux.HandleFunc("GET /api/auth/{provider}/start", s.withSession(s.beginAuth, false))
-	mux.HandleFunc("GET /api/auth/{provider}/callback", s.withSession(s.finishAuth, false))
+	// The callback resolves the session itself: a duplicate delivery may carry
+	// the cookie that an earlier delivery already rotated.
+	mux.HandleFunc("GET /api/auth/{provider}/callback", s.finishAuth)
 	mux.HandleFunc("DELETE /api/connections/{provider}", s.withSession(s.disconnect, true))
 	mux.HandleFunc("POST /api/conversions", s.withSession(s.create, true))
 	mux.HandleFunc("GET /api/conversions/{id}", s.withSession(s.get, false))

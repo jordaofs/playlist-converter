@@ -39,6 +39,11 @@ type Manager struct {
 	Client    *http.Client
 	mu        sync.Mutex
 	Active    func(context.Context, string) bool
+	// CallbackTTL is how long a finished callback outcome is kept for
+	// duplicate deliveries (default 2 minutes).
+	CallbackTTL time.Duration
+	flightMu    sync.Mutex
+	flights     map[string]*flight
 }
 
 func Random() string {

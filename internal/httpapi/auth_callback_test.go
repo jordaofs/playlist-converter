@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"playlistconverter/internal/domain"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"golang.org/x/oauth2"
@@ -123,5 +124,67 @@ func TestCallbackLogSanitizesProvider(t *testing.T) {
 	lines := logLines(t, &out)
 	if len(lines) != 1 || lines[0]["provider"] != "other" || strings.Contains(out.String(), "Evil") {
 		t.Fatalf("%v", lines)
+	}
+}
+
+type okIdentity struct{ domain.Provider }
+
+func (okIdentity) Identity(context.Context, domain.Token) (domain.Identity, error) {
+	return domain.Identity{ID: "channel", Name: "Me"}, nil
+}
+
+// Regression (production, 2026-11-08): Google's callback reached the server
+// twice. The first delivery connected the account and rotated the session;
+// the second, still carrying the old cookie, overwrote the page with
+// "We couldn't connect your account".
+func TestDuplicateCallbackConnectsOnce(t *testing.T) {
+	s, _ := testServer(t)
+	var out bytes.Buffer
+	s.Log = slog.New(slog.NewJSONHandler(&out, nil))
+	var calls atomic.Int32
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"access_token":"a","refresh_token":"r","token_type":"Bearer","expires_in":3600}`)
+	}))
+	defer ts.Close()
+	s.Auth.Client = ts.Client()
+	s.Auth.OAuth = map[string]*oauth2.Config{"youtube": {ClientID: "test", Endpoint: oauth2.Endpoint{AuthURL: ts.URL + "/auth", TokenURL: ts.URL + "/token"}}}
+	s.Auth.Providers = map[string]domain.Provider{"youtube": okIdentity{}}
+	h := s.Handler()
+	cookie, _ := authenticated(t, s)
+	get := func(path string) *httptest.ResponseRecorder {
+		r := httptest.NewRequest("GET", path, nil)
+		r.AddCookie(cookie)
+		r.Header.Set("Referer", s.Config.BaseURL+"/")
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		return w
+	}
+	u, _ := url.Parse(get("/api/auth/youtube/start").Header().Get("Location"))
+	callback := "/api/auth/youtube/callback?state=" + url.QueryEscape(u.Query().Get("state")) + "&code=once"
+	kept := func(w *httptest.ResponseRecorder) string {
+		value := ""
+		for _, c := range w.Result().Cookies() {
+			if c.Name == cookie.Name {
+				value = c.Value
+			}
+		}
+		return value
+	}
+	first, second := get(callback), get(callback)
+	for i, w := range []*httptest.ResponseRecorder{first, second} {
+		if w.Code != 303 || w.Header().Get("Location") != "/?auth=connected" {
+			t.Fatalf("delivery %d: %d %s", i+1, w.Code, w.Header().Get("Location"))
+		}
+	}
+	if kept(first) == "" || kept(first) == cookie.Value || kept(first) != kept(second) {
+		t.Fatal("both deliveries must leave the browser with the same rotated session")
+	}
+	if calls.Load() != 1 {
+		t.Fatalf("token exchanges = %d", calls.Load())
+	}
+	if lines := logLines(t, &out); len(lines) != 0 {
+		t.Fatalf("unexpected log lines %v", lines)
 	}
 }
